@@ -4,6 +4,8 @@ OBJS = Main.o Sushi.o
 
 BIN = ./sushi
 
+CXXFLAGS = -Wall -Wextra -Wpedantic -Wno-unused-function -std=c++11 -g -fPIC
+
 all: $(BIN)
 
 include DEPEND

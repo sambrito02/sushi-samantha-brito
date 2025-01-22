@@ -1,20 +1,23 @@
 #pragma once
-#include <string> 
+#include <vector>
+#include <string>
+#include <iostream>
 
 class Sushi {
 private:
-  int history; // `int` is a placehoder; replace it with a type of your choice
-  static const size_t HISTORY_LENGTH;
-  static const size_t MAX_INPUT;
+    std::vector<std::string> history; // Command history stored in a vector
+    static const size_t HISTORY_LENGTH;
+    static const size_t MAX_LINE_INPUT; 
 
 public:
-  Sushi() : history() {};
-  std::string read_line(std::istream &in);
-  bool read_config(const char *fname, bool ok_if_missing);
-  void store_to_history(std::string line);
-  void show_history();
+    Sushi() : history() {}
 
-  static const std::string DEFAULT_PROMPT;
+    std::string read_line(std::istream &in);
+    void store_to_history(const std::string &line);
+    bool read_config(const char *fname, bool ok_if_missing);
+    void show_history();
+
+    static const std::string DEFAULT_PROMPT;
 };
 
-#define UNUSED(expr) do {(void)(expr);} while (0)
+#define UNUSED(expr) do { (void)(expr); } while (0)
