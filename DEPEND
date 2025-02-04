@@ -1,2 +1,0 @@
-Main.o: Main.cc Sushi.hh
-Sushi.o: Sushi.cc Sushi.hh

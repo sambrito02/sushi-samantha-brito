@@ -4,14 +4,18 @@
 #include <string>
 #include "Sushi.hh"
 
+Sushi my_shell; // New global var
+
 int main(int argc, char *argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
-    Sushi shell;
+    // DZ: Moved to globals (not an error)
+    // Sushi shell;
 
     // Get the $HOME environment variable
     const char *home = std::getenv("HOME");
+    // DZ: No need to exit because "ok if missing"
     if (!home) {
         std::cerr << "Error: HOME environment variable not set" << std::endl;
         return EXIT_FAILURE;
@@ -19,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     // Read configuration file from $HOME/sushi.conf
     std::string config_path = std::string(home) + "/sushi.conf";
-    if (!shell.read_config(config_path.c_str(), true)) {
+    if (!my_shell.read_config(config_path.c_str(), true)) {
         return EXIT_FAILURE;
     }
 
@@ -28,14 +32,15 @@ int main(int argc, char *argv[]) {
     while (true) {
         // Display prompt and read command
         std::cout << Sushi::DEFAULT_PROMPT;
-        command = shell.read_line(std::cin);
+        command = my_shell.read_line(std::cin);
 
-        if (!command.empty()) {
-            shell.store_to_history(command);
-        }
+	// DZ: store_to_history performs this check
+        //if (!command.empty()) {
+            my_shell.store_to_history(command);
+	    //}
 
         // Display history
-        shell.show_history();
+        my_shell.show_history();
 
         // Exit if the command is "exit"
         if (command == "exit") {
