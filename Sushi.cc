@@ -1,94 +1,75 @@
-#include "Sushi.hh"
 #include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <sstream>
-#include <cctype>
-#include <limits>
-#include <algorithm> // DZ: Needed by all_of
+#include <algorithm>
+#include <iomanip>
+#include <cstdio>
+#include "Sushi.hh"
 
-// Initialize static constants
-const size_t Sushi::MAX_LINE_INPUT = 256; 
-const size_t Sushi::HISTORY_LENGTH = 10;
-const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
-
-std::string Sushi::read_line(std::istream &in) {
-    char buffer[MAX_LINE_INPUT + 1]; 
-    in.getline(buffer, MAX_LINE_INPUT/* + 1*/); // DZ: Off-by-1 error
-
-    if (in.fail() && !in.eof()) {
-        std::perror("Error reading input");
-	// DZ: wrong return value
-        // return nullptr;
-	return "";
+std::string Sushi::read_line(std::istream &in)
+{
+  std::string line;
+  if(!std::getline (in, line)) {// Has the operation failed?
+    if(!in.eof()) { 
+      std::perror("getline");
     }
+    return "";
+  }
+    
+  // Is the line empty?
+  if(std::all_of(line.begin(), line.end(), isspace)) {
+    return "";
+  }
 
-    if (in.gcount() == MAX_LINE_INPUT && !in.eof()) {
-        std::cerr << "Line too long, truncated." << std::endl;
-        in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	// DZ: Where do you truncate it?
-    }
-
-    std::string line(buffer);
-    line.erase(line.find_last_not_of(" \n\r\t") + 1);
-
-    // DZ: The first condition check is useless
-    if (/*line.empty() ||*/ std::all_of(line.begin(), line.end(), isspace)) {
-	// DZ: wrong return value
-        // return nullptr;
-	return "";
-    }
-
-    return line;
+  // Is the line too long?
+  if(line.size() > MAX_INPUT_SIZE) {
+    line.resize(MAX_INPUT_SIZE);
+    std::cerr << "Line too long, truncated." << std::endl;
+  }
+  
+  return line; 
 }
 
-void Sushi::store_to_history(const std::string &line) {
-    if (line.empty()) return;
-
-    if (history.size() >= HISTORY_LENGTH) {
-        history.erase(history.begin());
+bool Sushi::read_config(const char *fname, bool ok_if_missing)
+{
+  // Try to open a config file
+  std::ifstream config_file(fname);
+  if (!config_file) {
+    if (!ok_if_missing) {
+      std::perror(fname);
+      return false;
     }
-
-    history.push_back(line);
-}
-
-bool Sushi::read_config(const char *fname, bool ok_if_missing) {
-    std::ifstream file(fname);
-
-    if (!file) {
-      if (!ok_if_missing) {
-	// DZ: Wrong use of perror
-	// std::perror("Error opening config file");
-	std::perror(fname);
-      }
-        return ok_if_missing;
-    }
-
-    std::string line;
-    while (true) {
-        line = read_line(file);
-        if (line.empty()) {
-	  // DZ: Wrong check, it leaves the file at the first blank line
-	  // and ignores the rest of it; need to check for EOF
-	  break;
-	}
-        store_to_history(line);
-    }
-
-    if (file.bad()) {
-      // DZ: See above
-        std::perror("Error reading config file");
-        return false;
-    }
-
     return true;
+  }
+
+  // Read the config file
+  while(!config_file.eof()) {
+    std::string line = read_line(config_file);
+    store_to_history(line);
+  }
+  
+  return true; 
 }
 
-void Sushi::show_history() {
-    int index = 1;
-    for (const auto &entry : history) {
-        std::cout << std::setw(5) << index++ << "  " << entry << std::endl;
-    }
+void Sushi::store_to_history(std::string line)
+{
+  if (line.empty()) {
+    return;    
+  }
+
+  // Is the history buffer full?
+  while (history.size() >= HISTORY_LENGTH) {
+    history.pop_front();
+  }
+  
+  history.emplace_back(line);
+}
+
+void Sushi::show_history() const
+{
+  int index = 1;
+  for (const auto &cmd: history) {
+    std::cout << std::setw(5) << index++ << "  " << cmd << std::endl;
+  }
 }
 
 void Sushi::set_exit_flag()
