@@ -91,12 +91,3 @@ void Sushi::show_history() {
     }
 }
 
-void Sushi::set_exit_flag()
-{
-  // To be implemented
-}
-
-bool Sushi::get_exit_flag() const
-{
-  return false; // To be fixed
-}
