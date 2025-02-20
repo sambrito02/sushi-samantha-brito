@@ -5,14 +5,15 @@
 #include "Sushi.hh"
 
 // Declare a global Sushi object
-Sushi my_shell; // New global var
+Sushi my_shell; 
 
 int main(int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
-    // DZ: Moved to globals (not an error)
-    // Sushi shell;
+   // New function call
+  Sushi::prevent_interruption();
+  
 
     // Get the $HOME environment variable
     const char* home = std::getenv("HOME");
@@ -48,13 +49,17 @@ int main(int argc, char* argv[]) {
         // Display history (optional — uncomment if needed)
         // my_shell.show_history();
 
+	// DZ: The parser taes care of this
         // Exit if the command is "exit"
+	/*
         if (command == "exit") {
             my_shell.set_exit_flag();  // Set the flag to exit the loop
         }
+	*/
     }
 
-    std::cout << "Exit\n";
+    // DZ: Unneeded message
+    // std::cout << "Exit\n";
     return EXIT_SUCCESS;
 }
 

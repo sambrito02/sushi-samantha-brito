@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 
+// DZ: You implemented only 2 special characters out of 11 required
 std::string *Sushi::unquote_and_dup(const char* s)
 {
 	std::string* result = new std::string();
@@ -49,14 +50,6 @@ void Sushi::re_parse(int i) {
     //std::cout << "Parsing command: " << command << "\n";
     //return 0;
 //}
-
-void Sushi::set_exit_flag() {
-    exit_flag = true;
-}
-
-bool Sushi::get_exit_flag() const {
-    return exit_flag;
-}
 
 //---------------------------------------------------------------
 // Do not modify this function YET
