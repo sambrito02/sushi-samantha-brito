@@ -6,7 +6,8 @@
 #include <cctype>
 #include <limits>
 #include <algorithm> // DZ: Needed by all_of
-
+#include <unistd.h>
+#include <csignal>
 // Initialize static constants
 const size_t Sushi::MAX_LINE_INPUT = 256; 
 const size_t Sushi::HISTORY_LENGTH = 10;
@@ -104,30 +105,62 @@ bool Sushi::get_exit_flag() const {
 // New methods
 int Sushi::spawn(Program *exe, bool bg)
 {
-  // Must be implemented
-  UNUSED(exe);
-  UNUSED(bg);
-
-  return EXIT_SUCCESS;
+    pid_t pid = fork();
+ 
+    if (pid < 0) { // Fork error
+        std::perror("fork");
+        return EXIT_FAILURE;
+    }
+    
+    if (pid == 0) { // Child process
+        char* const* argv = exe->vector2array();
+        execvp(argv[0], argv);
+        
+        // If execvp fails
+        std::perror("execvp");
+        exe->free_array(argv); // Free allocated memory
+        exit(EXIT_FAILURE);
+    } else { // Parent process
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            std::perror("waitpid");
+            return EXIT_FAILURE;
+        }
+        return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
+    }
 }
 
 void Sushi::prevent_interruption() {
-  // Must be implemented
+    struct sigaction sa = {};
+    sa.sa_handler = Sushi::refuse_to_die; // Set handler function
+    sigemptyset(&sa.sa_mask); 
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        std::perror("sigaction");
+    }
 }
 
 void Sushi::refuse_to_die(int signo) {
-  // Must be implemented
-  UNUSED(signo);
+    std::cerr << "\nType exit to exit the shell\n";
 }
 
 char* const* Program::vector2array() {
-  // Must be implemented
-  return nullptr; 
+    char** argv = new char*[args->size() + 1]; // Allocate memory
+    for (size_t i = 0; i < args->size(); ++i) {
+        argv[i] = strdup(args->at(i)->c_str()); // Use strdup() to avoid modifying original memory
+    }
+    argv[args->size()] = nullptr; // Null-terminate
+    return argv;
 }
 
 void Program::free_array(char *const argv[]) {
-  // Must be implemented
-  UNUSED(argv);
+    if (!argv) return;
+    
+    for (size_t i = 0; argv[i] != nullptr; ++i) {
+        free(argv[i]);  // Free each allocated string
+    }
+    delete[] argv; 
 }
 
 Program::~Program() {
