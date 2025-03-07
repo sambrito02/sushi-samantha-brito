@@ -1,166 +1,166 @@
-#include "Sushi.hh"
 #include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <sstream>
-#include <cctype>
-#include <limits>
-#include <algorithm> // DZ: Needed by all_of
-#include <unistd.h>
+#include <algorithm>
+#include <iomanip>
+#include <cstdio>
 #include <csignal>
-// Initialize static constants
-const size_t Sushi::MAX_LINE_INPUT = 256; 
-const size_t Sushi::HISTORY_LENGTH = 10;
-const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
+#include <cassert>
+#include <sys/wait.h>
+#include "Sushi.hh"
 
-std::string Sushi::read_line(std::istream &in) {
-    char buffer[MAX_LINE_INPUT + 1]; 
-    in.getline(buffer, MAX_LINE_INPUT/* + 1*/); // DZ: Off-by-1 error
-
-    if (in.fail() && !in.eof()) {
-        std::perror("Error reading input");
-	// DZ: wrong return value
-        // return nullptr;
-	return "";
+std::string Sushi::read_line(std::istream &in)
+{
+  std::string line;
+  if(!std::getline (in, line)) {// Has the operation failed?
+    if(!in.eof()) { 
+      std::perror("getline");
     }
+    return "";
+  }
+    
+  // Is the line empty?
+  if(std::all_of(line.begin(), line.end(), isspace)) {
+    return "";
+  }
 
-    if (in.gcount() == MAX_LINE_INPUT && !in.eof()) {
-        std::cerr << "Line too long, truncated." << std::endl;
-        in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	// DZ: Where do you truncate it?
-    }
-
-    std::string line(buffer);
-    line.erase(line.find_last_not_of(" \n\r\t") + 1);
-
-    // DZ: The first condition check is useless
-    if (/*line.empty() ||*/ std::all_of(line.begin(), line.end(), isspace)) {
-	// DZ: wrong return value
-        // return nullptr;
-	return "";
-    }
-
-    return line;
+  // Is the line too long?
+  if(line.size() > MAX_INPUT_SIZE) {
+    line.resize(MAX_INPUT_SIZE);
+    std::cerr << "Line too long, truncated." << std::endl;
+  }
+  
+  return line; 
 }
 
-void Sushi::store_to_history(const std::string &line) {
-    if (line.empty()) return;
-
-    if (history.size() >= HISTORY_LENGTH) {
-        history.erase(history.begin());
+bool Sushi::read_config(const char *fname, bool ok_if_missing)
+{
+  // Try to open a config file
+  std::ifstream config_file(fname);
+  if (!config_file) {
+    if (!ok_if_missing) {
+      std::perror(fname);
+      return false;
     }
-
-    history.push_back(line);
-}
-
-bool Sushi::read_config(const char *fname, bool ok_if_missing) {
-    std::ifstream file(fname);
-
-    if (!file) {
-      if (!ok_if_missing) {
-	// DZ: Wrong use of perror
-	// std::perror("Error opening config file");
-	std::perror(fname);
-      }
-        return ok_if_missing;
-    }
-
-    std::string line;
-    while (true) {
-        line = read_line(file);
-        if (line.empty()) {
-	  // DZ: Wrong check, it leaves the file at the first blank line
-	  // and ignores the rest of it; need to check for EOF
-	  break;
-	}
-	// DZ: Must executed the command!
-        store_to_history(line);
-    }
-
-    if (file.bad()) {
-      // DZ: See above
-        std::perror("Error reading config file");
-        return false;
-    }
-
     return true;
-}
+  }
 
-void Sushi::show_history() {
-    int index = 1;
-    for (const auto &entry : history) {
-        std::cout << std::setw(5) << index++ << "  " << entry << std::endl;
+  // Read the config file
+  while(!config_file.eof()) {
+    std::string line = read_line(config_file);
+    if(!parse_command(line)) {
+      store_to_history(line);
     }
-}
-// DZ: Both functions implemented in the wrong file
-void Sushi::set_exit_flag() {
-    exit_flag = true;
-}
-
-bool Sushi::get_exit_flag() const {
-    return exit_flag;
+  }
+  
+  return true; 
 }
 
-//---------------------------------------------------------
-// New methods
+void Sushi::store_to_history(std::string line)
+{
+  // Do not insert empty lines
+  if (line.empty()) {
+    return;    
+  }
+
+  // Is the history buffer full?
+  while (history.size() >= HISTORY_LENGTH) {
+    history.pop_front();
+  }
+  
+  history.emplace_back(line);
+}
+
+void Sushi::show_history() 
+{
+  int index = 1;
+
+  // `history` itself will be inserted
+  if (history.size() == HISTORY_LENGTH) {
+    history.pop_front();
+  }
+  
+  for (const auto &cmd: history) {
+    std::cout << std::setw(5) << index++ << "  " << cmd << std::endl;
+  }
+  
+  // `history` itself will be inserted
+  std::cout << std::setw(5) << index++ << "  " << "history" << std::endl;
+}
+
+void Sushi::set_exit_flag()
+{
+  exit_flag = true;
+}
+
+bool Sushi::get_exit_flag() const
+{
+  return exit_flag;
+}
+
 int Sushi::spawn(Program *exe, bool bg)
 {
-    pid_t pid = fork();
- 
-    if (pid < 0) { // Fork error
-        std::perror("fork");
-        return EXIT_FAILURE;
-    }
+  UNUSED(bg);
+  
+  pid_t pid = fork();
+
+  if (pid == -1) { // Failed to fork
+    std::perror("fork");
+    return EXIT_FAILURE;
+  }
+
+  if (pid == 0) { // Child    
+    char* const* args = exe->vector2array(); // No need to delete this array!
+    assert(args);
     
-    if (pid == 0) { // Child process
-        char* const* argv = exe->vector2array();
-        execvp(argv[0], argv);
-        
-        // If execvp fails
-        std::perror("execvp");
-        exe->free_array(argv); // Free allocated memory
-        exit(EXIT_FAILURE);
-    } else { // Parent process
-        int status;
-        if (waitpid(pid, &status, 0) == -1) {
-            std::perror("waitpid");
-            return EXIT_FAILURE;
-        }
-        return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
-    }
+    execvp(args[0], args);
+    std::perror(args[0]);
+    // Do not run atexit handlers and flush buffers
+    _exit(EXIT_FAILURE);
+  }
+
+  // Parent
+  int status;
+  if(waitpid(pid, &status, 0) != pid) {
+    std::perror("waitpid");
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }
 
 void Sushi::prevent_interruption() {
-    struct sigaction sa = {};
-    sa.sa_handler = Sushi::refuse_to_die; // Set handler function
-    sigemptyset(&sa.sa_mask); 
-    sa.sa_flags = 0;
-
-    if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        std::perror("sigaction");
-    }
+  struct sigaction sa;
+  sa.sa_handler = refuse_to_die;
+  // Restart the read() system call
+  sa.sa_flags = SA_RESTART;
+  if(sigaction(SIGINT, &sa, nullptr) != 0) {
+    std::perror("sigaction");
+    std::exit(EXIT_FAILURE);
+  }
 }
 
 void Sushi::refuse_to_die(int signo) {
-    std::cerr << "\nType exit to exit the shell\n";
+  UNUSED(signo);
+  std::cerr << "Type exit to exit the shell" << '\n';
+}
+
+void Sushi::mainloop() {
+  // Must be implemented
 }
 
 char* const* Program::vector2array() {
-    char** argv = new char*[args->size() + 1]; // Allocate memory
-    for (size_t i = 0; i < args->size(); ++i) {
-        argv[i] = strdup(args->at(i)->c_str()); // Use strdup() to avoid modifying original memory
-    }
-    argv[args->size()] = nullptr; // Null-terminate
-    return argv;
-}
-
-void Program::free_array(char *const argv[]) {
-    if (!argv) return;
-    
-    for (size_t i = 0; argv[i] != nullptr; ++i) {
-        free(argv[i]);  // Free each allocated string
-    }
-    delete[] argv; 
+  // std::vector<std::string*> *args -> char *const argv[]
+  assert(args);
+  
+  size_t size = args->size();
+  char** array = new char*[size + 1]; // Allocate an array of char*
+  
+  for (size_t i = 0; i < size; ++i) {
+    assert((*args)[i]);
+    array[i] = const_cast<char*>((*args)[i]->c_str()); // Copy string content
+  }
+  
+  array[size] = nullptr; // Null-terminate the array
+  return array;
 }
 
 Program::~Program() {

@@ -1,65 +1,43 @@
 #include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include "Sushi.hh"
 
-// Declare a global Sushi object
+// Initialize the static constants
 Sushi my_shell; 
+const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
+const std::string Sushi::DEFAULT_CONFIG = "sushi.conf";
 
-int main(int argc, char* argv[]) {
-    UNUSED(argc);
-    UNUSED(argv);
-
-   // New function call
+int main(int argc, char *argv[])
+{
+  // Use argc and argv!
+  
+  // Move this into the constructor
+  //-------------------------------------------
   Sushi::prevent_interruption();
   
+  const char *home_dir = std::getenv("HOME");
+  // OK if missing!
+  if (home_dir) {
+    std::string config_path = std::string(home_dir) + "/" + Sushi::DEFAULT_CONFIG;
+    my_shell.read_config(config_path.c_str(), true);
+  }
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    // Get the $HOME environment variable
-    const char* home = std::getenv("HOME");
-    // DZ: No need to exit because "ok if missing"
-    if (!home) {
-        std::cerr << "Error: HOME environment variable not set" << std::endl;
-        return EXIT_FAILURE;
+  // Move this into the main loop method
+  //-------------------------------------------
+  while(!my_shell.get_exit_flag()) {
+    std::cout << Sushi::DEFAULT_PROMPT;
+    std::string command = Sushi::read_line(std::cin);
+    if(!Sushi::parse_command(command)) {
+      // Re-execute from history if needed
+      if(!my_shell.re_execute()) {
+	// Do not insert the bangs (!)
+	my_shell.store_to_history(command);
+      }
     }
+  }
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    // Read configuration file from $HOME/sushi.conf
-    std::string config_path = std::string(home) + "/sushi.conf";
-    if (!my_shell.read_config(config_path.c_str(), true)) {
-        return EXIT_FAILURE;
-    }
-
-    // Main loop
-    std::string command;
-    while (!my_shell.get_exit_flag()) {
-        // Display prompt and read command
-        std::cout << Sushi::DEFAULT_PROMPT;
-        command = my_shell.read_line(std::cin);
-
-        // DZ: store_to_history performs this check
-        if (command.empty()) {
-            continue;
-        }
-
-        // Parse the command; store it in history only if it's valid
-        if (my_shell.parse_command(command) == 0) {  // 0 means no syntax error
-            my_shell.store_to_history(command);
-        }
-
-        // Display history (optional — uncomment if needed)
-        // my_shell.show_history();
-
-	// DZ: The parser taes care of this
-        // Exit if the command is "exit"
-	/*
-        if (command == "exit") {
-            my_shell.set_exit_flag();  // Set the flag to exit the loop
-        }
-	*/
-    }
-
-    // DZ: Unneeded message
-    // std::cout << "Exit\n";
-    return EXIT_SUCCESS;
+  // my_shell.mainloop();
+  
+  return EXIT_SUCCESS;
 }
-
