@@ -8,6 +8,9 @@
 #include <algorithm> // DZ: Needed by all_of
 #include <unistd.h>
 #include <csignal>
+#include <cstring> // DZ: Needed by strdup
+#include <sys/wait.h> // DZ: Needed by waitpid
+
 // Initialize static constants
 const size_t Sushi::MAX_LINE_INPUT = 256; 
 const size_t Sushi::HISTORY_LENGTH = 10;
@@ -105,6 +108,7 @@ bool Sushi::get_exit_flag() const {
 // New methods
 int Sushi::spawn(Program *exe, bool bg)
 {
+  UNUSED(bg);
     pid_t pid = fork();
  
     if (pid < 0) { // Fork error
@@ -117,7 +121,9 @@ int Sushi::spawn(Program *exe, bool bg)
         execvp(argv[0], argv);
         
         // If execvp fails
-        std::perror("execvp");
+	// DZ: Incorrect use of perreor
+        // std::perror("execvp");
+        std::perror(argv[0]);
         exe->free_array(argv); // Free allocated memory
         exit(EXIT_FAILURE);
     } else { // Parent process
@@ -134,7 +140,7 @@ void Sushi::prevent_interruption() {
     struct sigaction sa = {};
     sa.sa_handler = Sushi::refuse_to_die; // Set handler function
     sigemptyset(&sa.sa_mask); 
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_RESTART /*DZ: 0 */ ;
 
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
         std::perror("sigaction");
@@ -142,12 +148,19 @@ void Sushi::prevent_interruption() {
 }
 
 void Sushi::refuse_to_die(int signo) {
+  UNUSED(signo);
     std::cerr << "\nType exit to exit the shell\n";
+}
+
+void Sushi::mainloop() {
+  // Must be implemented
 }
 
 char* const* Program::vector2array() {
     char** argv = new char*[args->size() + 1]; // Allocate memory
     for (size_t i = 0; i < args->size(); ++i) {
+      // DZ: `char* CONST*` ensures there are no modifications. Do NOT
+      // DZ: make copies without necessity
         argv[i] = strdup(args->at(i)->c_str()); // Use strdup() to avoid modifying original memory
     }
     argv[args->size()] = nullptr; // Null-terminate
@@ -156,7 +169,8 @@ char* const* Program::vector2array() {
 
 void Program::free_array(char *const argv[]) {
     if (!argv) return;
-    
+
+    // DZ: See above
     for (size_t i = 0; argv[i] != nullptr; ++i) {
         free(argv[i]);  // Free each allocated string
     }

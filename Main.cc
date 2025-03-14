@@ -8,10 +8,10 @@
 Sushi my_shell; 
 
 int main(int argc, char* argv[]) {
-    UNUSED(argc);
-    UNUSED(argv);
-
-   // New function call
+  // Use argc and argv!
+  
+  // Move this into the constructor
+  //-------------------------------------------
   Sushi::prevent_interruption();
   
 
@@ -29,7 +29,11 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Main loop
+   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  // Move this into the main loop method
+  //-------------------------------------------
+   // Main loop
     std::string command;
     while (!my_shell.get_exit_flag()) {
         // Display prompt and read command
@@ -57,6 +61,9 @@ int main(int argc, char* argv[]) {
         }
 	*/
     }
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  my_shell.mainloop();
 
     // DZ: Unneeded message
     // std::cout << "Exit\n";
