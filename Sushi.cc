@@ -108,32 +108,21 @@ bool Sushi::get_exit_flag() const {
 // New methods
 int Sushi::spawn(Program *exe, bool bg)
 {
-  UNUSED(bg);
     pid_t pid = fork();
- 
-    if (pid < 0) { // Fork error
-        std::perror("fork");
-        return EXIT_FAILURE;
-    }
-    
-    if (pid == 0) { // Child process
-        char* const* argv = exe->vector2array();
-        execvp(argv[0], argv);
-        
-        // If execvp fails
-	// DZ: Incorrect use of perreor
-        // std::perror("execvp");
-        std::perror(argv[0]);
-        exe->free_array(argv); // Free allocated memory
+    if (pid == 0) {  // Child process
+        exe->execute();
         exit(EXIT_FAILURE);
-    } else { // Parent process
-        int status;
-        if (waitpid(pid, &status, 0) == -1) {
-            std::perror("waitpid");
-            return EXIT_FAILURE;
-        }
-        return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
     }
+    else if (pid > 0) {  // Parent process
+        if (!bg) {
+            int status = 0;
+            waitpid(pid, &status, 0);
+            assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+        } else {
+            assign(new std::string("?"), new std::string("0"));
+        }
+    }
+    return 0;
 }
 
 void Sushi::prevent_interruption() {
@@ -152,10 +141,49 @@ void Sushi::refuse_to_die(int signo) {
     std::cerr << "\nType exit to exit the shell\n";
 }
 
-void Sushi::mainloop() {
-  // Must be implemented
-}
+int Sushi::mainloop() {
+    std::string input;
+    while (!get_exit_flag()) {
+        std::cout << get_prompt();
+        input = read_line(std::cin);
 
+        if (input.empty()) continue;
+
+        parse_command(input);
+    }
+    return 0;  // Fix: Ensure it returns int
+}
+std::string* Sushi::getenv(const char *name) {
+    char *val = std::getenv(name);
+    return val ? new std::string(val) : new std::string("");
+}
+void Sushi::assign(const std::string *name, const std::string *value) {
+    if (setenv(name->c_str(), value->c_str(), 1) != 0) {
+        // Silently fail
+    }
+    delete name;
+    delete value;
+}
+std::string Sushi::get_prompt() {
+    std::string* ps1 = getenv("PS1");
+    std::string prompt = (ps1 && !ps1->empty()) ? *ps1 : "sushi> ";
+    delete ps1;  // Prevent memory leak
+    return prompt;
+}
+bool Sushi::execute_script(const std::string &filename) {
+    std::ifstream script(filename);
+    if (!script) {
+        std::cerr << "Error: Cannot open script " << filename << "\n";
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(script, line)) {
+        parse_command(line);  // Assuming process_command() executes shell commands
+    }
+
+    return true;
+}
 char* const* Program::vector2array() {
     char** argv = new char*[args->size() + 1]; // Allocate memory
     for (size_t i = 0; i < args->size(); ++i) {

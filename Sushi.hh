@@ -39,6 +39,7 @@ public:
   std::string progname() { return *args->at(0); }
   char* const* vector2array();
   void free_array(char *const argv[]);
+  void execute();
 };
 
 class Sushi {
@@ -63,11 +64,14 @@ public:
   void set_exit_flag(); 
   bool get_exit_flag() const; 
   static int parse_command(const std::string command);
-  void mainloop(); // New method
-  int spawn(Program *exe, bool bg); 
+  int mainloop(); // New method
+  int spawn(Program *exe, bool bg);
+  static void assign(const std::string *name, const std::string *value);
+  std::string get_prompt(); 
   static void prevent_interruption();
   static void refuse_to_die(int signo); 
     static const std::string DEFAULT_PROMPT;
+  bool execute_script(const std::string &filename);
 };
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
