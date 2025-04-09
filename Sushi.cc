@@ -108,21 +108,100 @@ bool Sushi::get_exit_flag() const {
 // New methods
 int Sushi::spawn(Program *exe, bool bg)
 {
-    pid_t pid = fork();
-    if (pid == 0) {  // Child process
-        exe->execute();
-        exit(EXIT_FAILURE);
-    }
-    else if (pid > 0) {  // Parent process
-        if (!bg) {
-            int status = 0;
-            waitpid(pid, &status, 0);
-            assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+// Case 1: No pipe, just one command
+    if (exe->pipe == nullptr) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            exe->execute();  // Run the command
+            exit(EXIT_FAILURE);
+        } else if (pid > 0) {
+            if (!bg) {
+                int status = 0;
+                waitpid(pid, &status, 0);
+                assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+            } else {
+                assign(new std::string("?"), new std::string("0"));
+            }
+            return 0;
         } else {
-            assign(new std::string("?"), new std::string("0"));
+            perror("fork");
+            return -1;
         }
     }
+
+    // Case 2: Pipeline (e.g., ls | grep foo | wc -l)
+    std::vector<Program*> commands;
+    for (Program* p = exe; p != nullptr; p = p->pipe) {
+        commands.push_back(p);
+    }
+
+    int num_cmds = commands.size();
+    int pipes[2];           // For current pipe
+    int prev_read = -1;     // Previous pipe's read end
+    std::vector<pid_t> pids;
+
+    for (int i = 0; i < num_cmds; ++i) {
+        // Create a pipe if not the last command
+        if (i < num_cmds - 1) {
+            if (pipe(pipes) == -1) {
+                perror("pipe");
+                return -1;
+            }
+        }
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            // CHILD PROCESS
+
+            // If this is not the first command, redirect stdin
+            if (prev_read != -1) {
+                dup2(prev_read, STDIN_FILENO);
+                close(prev_read);
+            }
+
+            // If this is not the last command, redirect stdout
+            if (i < num_cmds - 1) {
+                close(pipes[0]);               // Close read end
+                dup2(pipes[1], STDOUT_FILENO); // Write to pipe
+                close(pipes[1]);
+            }
+
+            // Execute command
+            commands[i]->execute();
+            exit(EXIT_FAILURE);  // Only if exec fails
+        } else if (pid > 0) {
+            // PARENT PROCESS
+            pids.push_back(pid);
+
+            // Close the previous read end (if any)
+            if (prev_read != -1) {
+                close(prev_read);
+            }
+
+            // Close write end of current pipe (parent doesn't use it)
+            if (i < num_cmds - 1) {
+                close(pipes[1]);
+                prev_read = pipes[0];  // Save read end for next command
+            }
+        } else {
+            perror("fork");
+            return -1;
+        }
+    }
+
+    // Wait for all children if not a background job
+    if (!bg) {
+        int status = 0;
+        for (pid_t pid : pids) {
+            waitpid(pid, &status, 0);
+        }
+        assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+    } else {
+        assign(new std::string("?"), new std::string("0"));
+    }
+
     return 0;
+
 }
 
 void Sushi::prevent_interruption() {
