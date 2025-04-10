@@ -4,14 +4,19 @@
 #include <string>
 #include "Sushi.hh"
 
+// DZ: Must be a global variable
+Sushi my_shell;
 int main(int argc, char* argv[]) {
-    Sushi my_shell;
+  //Sushi my_shell;
 
     for (int i = 1; i < argc; ++i) {
-        if (!my_shell.execute_script(argv[i])) {
-            std::cerr << "Error executing script: " << argv[i] << std::endl;
-            return EXIT_FAILURE;  // Exit immediately if a script fails
-        }
+      my_shell.read_config(argv[i], false);
+      // DZ: Wrong function
+      //if (!my_shell.execute_script(argv[i])) {
+	  // DZ: Already reported
+	  // std::cerr << "Error executing script: " << argv[i] << std::endl;
+      //return EXIT_FAILURE;  // Exit immediately if a script fails
+      //}
     }
 
     return my_shell.mainloop();

@@ -45,6 +45,9 @@ void Sushi::re_parse(int i) {
 	        history.push_back(command);
 	    }
 	}
+
+// DZ: This function is already implemented
+/*
 int Sushi::parse_command(const std::string command) {
     std::istringstream iss(command);
     std::string first;
@@ -74,12 +77,15 @@ int Sushi::parse_command(const std::string command) {
     }
     return 0;
 }
+*/
 
 //---------------------------------------------------------------
 // Implement the function
 std::string *Sushi::getenv(const char* s) 
 {
-    char *val = std::getenv(name);
+  //DZ; Wrong var name
+  //char *val = std::getenv(name);
+    char *val = std::getenv(s);
     return (val != nullptr) ? new std::string(val) : new std::string("");
 }
 
@@ -87,7 +93,8 @@ std::string *Sushi::getenv(const char* s)
 void Sushi::putenv(const std::string* name, const std::string* value)
 {
   if (setenv(name->c_str(), value->c_str(), 1) != 0) {
-        std::cerr << "Failed to set environment variable: " << *name << std::endl;
+    // DZ: Fail silently, as requested
+    // std::cerr << "Failed to set environment variable: " << *name << std::endl;
     }
     delete name;
     delete value;

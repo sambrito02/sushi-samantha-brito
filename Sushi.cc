@@ -112,15 +112,16 @@ int Sushi::spawn(Program *exe, bool bg)
     if (exe->pipe == nullptr) {
         pid_t pid = fork();
         if (pid == 0) {
+	  // DZ: No such function
             exe->execute();  // Run the command
             exit(EXIT_FAILURE);
         } else if (pid > 0) {
             if (!bg) {
                 int status = 0;
                 waitpid(pid, &status, 0);
-                assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+                putenv/*assign*/(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
             } else {
-                assign(new std::string("?"), new std::string("0"));
+	      putenv/*assign*/(new std::string("?"), new std::string("0"));
             }
             return 0;
         } else {
@@ -195,9 +196,9 @@ int Sushi::spawn(Program *exe, bool bg)
         for (pid_t pid : pids) {
             waitpid(pid, &status, 0);
         }
-        assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+        putenv/*assign*/(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
     } else {
-        assign(new std::string("?"), new std::string("0"));
+      putenv/*assign*/(new std::string("?"), new std::string("0"));
     }
 
     return 0;
@@ -232,23 +233,34 @@ int Sushi::mainloop() {
     }
     return 0;  // Fix: Ensure it returns int
 }
+
+// DZ: Duplicate definition
+/*
 std::string* Sushi::getenv(const char *name) {
     char *val = std::getenv(name);
     return val ? new std::string(val) : new std::string("");
 }
+*/
+
+//DZ: Wrong function name
+/*
 void Sushi::assign(const std::string *name, const std::string *value) {
     if (setenv(name->c_str(), value->c_str(), 1) != 0) {
         // Silently fail
     }
     delete name;
     delete value;
-}
+    }
+*/
+
 std::string Sushi::get_prompt() {
     std::string* ps1 = getenv("PS1");
-    std::string prompt = (ps1 && !ps1->empty()) ? *ps1 : "sushi> ";
+    std::string prompt = (ps1 && !ps1->empty()) ? *ps1 : DEFAULT_PROMPT/*"sushi> "*/;
     delete ps1;  // Prevent memory leak
     return prompt;
 }
+// DZ: Not needed
+/*
 bool Sushi::execute_script(const std::string &filename) {
     std::ifstream script(filename);
     if (!script) {
@@ -263,6 +275,7 @@ bool Sushi::execute_script(const std::string &filename) {
 
     return true;
 }
+*/
 char* const* Program::vector2array() {
     char** argv = new char*[args->size() + 1]; // Allocate memory
     for (size_t i = 0; i < args->size(); ++i) {

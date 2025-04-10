@@ -72,7 +72,7 @@ public:
   static void prevent_interruption();
   static void refuse_to_die(int signo); 
     static const std::string DEFAULT_PROMPT;
-  bool execute_script(const std::string &filename);
+  // bool execute_script(const std::string &filename);
 };
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
