@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include "Sushi.hh"
-
+Sushi my_shell;
 int main(int argc, char* argv[]) {
     Sushi my_shell;
 

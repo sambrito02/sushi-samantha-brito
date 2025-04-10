@@ -1,6 +1,7 @@
 #include "Sushi.hh"
 #include <string>
 #include <iostream>
+#include <sstream>
 
 // DZ: You implemented only 2 special characters out of 11 required
 std::string *Sushi::unquote_and_dup(const char* s)
@@ -45,7 +46,7 @@ void Sushi::re_parse(int i) {
 	        history.push_back(command);
 	    }
 	}
-int Sushi::parse_command(const std::string command) {
+/*int Sushi::parse_command(const std::string command) {
     std::istringstream iss(command);
     std::string first;
     iss >> first;
@@ -55,31 +56,40 @@ int Sushi::parse_command(const std::string command) {
         size_t pos = first.find('=');
         std::string name = first.substr(0, pos);
         std::string value = first.substr(pos + 1);
-        putenv(new std::string(name), new std::string(value));
+        setenv(name.c_str(), value.c_str(), 1); // updated to use standard setenv
         return 0;
     }
-    // Handle built-in commands (like `exit`)
-    else if (first == "exit") {
-        exit(0);
-    }
-    // Execute external commands
-    else {
-        bool bg = (command.back() == '&');
-        std::string actual_command = command;
-        if (bg) actual_command.pop_back();  // Remove '&' from command
-        
-        Program *exe = new Program(new std::vector<std::string*>({new std::string(actual_command)}));
-        Sushi().spawn(exe, bg);
-        delete exe;
-    }
-    return 0;
-}
 
+    // Handle built-in command
+    if (first == "exit") {
+        exit_flag = true; // assuming exit_flag is a member of Sushi
+        return 0;
+    }
+
+    // Execute external command
+    bool bg = (!command.empty() && command.back() == '&');
+    std::string actual_command = command;
+    if (bg) actual_command.pop_back(); // Remove '&'
+
+    // Split the command into tokens
+    std::istringstream cmd_iss(actual_command);
+    std::string token;
+    auto args = new std::vector<std::string*>();
+    while (cmd_iss >> token) {
+        args->push_back(new std::string(token));
+    }
+
+    Program* exe = new Program(args);
+    spawn(exe, bg); // use current Sushi instance
+    delete exe;
+
+    return 0;
+}*/
 //---------------------------------------------------------------
 // Implement the function
 std::string *Sushi::getenv(const char* s) 
 {
-    char *val = std::getenv(name);
+    char *val = std::getenv(s);
     return (val != nullptr) ? new std::string(val) : new std::string("");
 }
 

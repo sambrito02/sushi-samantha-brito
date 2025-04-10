@@ -39,7 +39,7 @@
 %%
 
 cmdline: 
-%empty /* an empty line is valid, too! Do nothing */ 
+/*empty*/ /* an empty line is valid, too! Do nothing */ 
 | redir_exe bg_mode    { my_shell.spawn($1, $2); }
 | in_exe pipe bg_mode  { $1->set_pipe($2); my_shell.spawn($1, $3); }
 | arg YY_SUSHI_SET arg { my_shell.putenv($1, $3); }
@@ -83,7 +83,7 @@ out1_redir: YY_SUSHI_MORE arg      { $$.set_out1($2); }
 out2_redir: YY_SUSHI_MOREMORE arg  { $$.set_out2($2); }
 
 bg_mode: 
- %empty        { $$ = false; }
+ /*empty*/        { $$ = false; }
 | YY_SUSHI_AMP { $$ = true; }
 
 exe: 

@@ -64,7 +64,7 @@ public:
   void re_parse(int i); 
   void set_exit_flag(); 
   bool get_exit_flag() const; 
-  static int parse_command(const std::string command);
+  int parse_command(const std::string command);
   int mainloop(); // New method
   int spawn(Program *exe, bool bg);
   static void assign(const std::string *name, const std::string *value);
