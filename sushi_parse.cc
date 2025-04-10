@@ -46,7 +46,14 @@ void Sushi::re_parse(int i) {
 	        history.push_back(command);
 	    }
 	}
+<<<<<<< HEAD
 /*int Sushi::parse_command(const std::string command) {
+=======
+
+// DZ: This function is already implemented
+/*
+int Sushi::parse_command(const std::string command) {
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
     std::istringstream iss(command);
     std::string first;
     iss >> first;
@@ -59,6 +66,26 @@ void Sushi::re_parse(int i) {
         setenv(name.c_str(), value.c_str(), 1); // updated to use standard setenv
         return 0;
     }
+<<<<<<< HEAD
+=======
+    // Handle built-in commands (like `exit`)
+    else if (first == "exit") {
+        exit(0);
+    }
+    // Execute external commands
+    else {
+        bool bg = (command.back() == '&');
+        std::string actual_command = command;
+        if (bg) actual_command.pop_back();  // Remove '&' from command
+        
+        Program *exe = new Program(new std::vector<std::string*>({new std::string(actual_command)}));
+        Sushi().spawn(exe, bg);
+        delete exe;
+    }
+    return 0;
+}
+*/
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 
     // Handle built-in command
     if (first == "exit") {
@@ -89,6 +116,11 @@ void Sushi::re_parse(int i) {
 // Implement the function
 std::string *Sushi::getenv(const char* s) 
 {
+<<<<<<< HEAD
+=======
+  //DZ; Wrong var name
+  //char *val = std::getenv(name);
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
     char *val = std::getenv(s);
     return (val != nullptr) ? new std::string(val) : new std::string("");
 }
@@ -97,7 +129,8 @@ std::string *Sushi::getenv(const char* s)
 void Sushi::putenv(const std::string* name, const std::string* value)
 {
   if (setenv(name->c_str(), value->c_str(), 1) != 0) {
-        std::cerr << "Failed to set environment variable: " << *name << std::endl;
+    // DZ: Fail silently, as requested
+    // std::cerr << "Failed to set environment variable: " << *name << std::endl;
     }
     delete name;
     delete value;

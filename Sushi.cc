@@ -89,15 +89,20 @@ int Sushi::spawn(Program *exe, bool bg) {
     if (exe->pipe == nullptr) {
         pid_t pid = fork();
         if (pid == 0) {
+<<<<<<< HEAD
             exe->execute();
+=======
+	  // DZ: No such function
+            exe->execute();  // Run the command
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
             exit(EXIT_FAILURE);
         } else if (pid > 0) {
             if (!bg) {
                 int status = 0;
                 waitpid(pid, &status, 0);
-                assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+                putenv/*assign*/(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
             } else {
-                assign(new std::string("?"), new std::string("0"));
+	      putenv/*assign*/(new std::string("?"), new std::string("0"));
             }
             return 0;
         } else {
@@ -155,9 +160,9 @@ int Sushi::spawn(Program *exe, bool bg) {
         for (pid_t pid : pids) {
             waitpid(pid, &status, 0);
         }
-        assign(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
+        putenv/*assign*/(new std::string("?"), new std::string(std::to_string(WEXITSTATUS(status))));
     } else {
-        assign(new std::string("?"), new std::string("0"));
+      putenv/*assign*/(new std::string("?"), new std::string("0"));
     }
 
     return 0;
@@ -186,16 +191,33 @@ int Sushi::mainloop() {
         if (input.empty()) continue;
         parse_command(input);
     }
+<<<<<<< HEAD
     return 0;
 }
 
 
+=======
+    return 0;  // Fix: Ensure it returns int
+}
+
+// DZ: Duplicate definition
+/*
+std::string* Sushi::getenv(const char *name) {
+    char *val = std::getenv(name);
+    return val ? new std::string(val) : new std::string("");
+}
+*/
+
+//DZ: Wrong function name
+/*
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 void Sushi::assign(const std::string *name, const std::string *value) {
     if (setenv(name->c_str(), value->c_str(), 1) != 0) {
         // silently ignore
     }
     delete name;
     delete value;
+<<<<<<< HEAD
 }
 
 std::string Sushi::get_prompt() {
@@ -205,6 +227,19 @@ std::string Sushi::get_prompt() {
     return prompt;
 }
 
+=======
+    }
+*/
+
+std::string Sushi::get_prompt() {
+    std::string* ps1 = getenv("PS1");
+    std::string prompt = (ps1 && !ps1->empty()) ? *ps1 : DEFAULT_PROMPT/*"sushi> "*/;
+    delete ps1;  // Prevent memory leak
+    return prompt;
+}
+// DZ: Not needed
+/*
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 bool Sushi::execute_script(const std::string &filename) {
     std::ifstream script(filename);
     if (!script) {
@@ -219,7 +254,11 @@ bool Sushi::execute_script(const std::string &filename) {
 
     return true;
 }
+<<<<<<< HEAD
 
+=======
+*/
+>>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 char* const* Program::vector2array() {
     char** argv = new char*[args->size() + 1];
     for (size_t i = 0; i < args->size(); ++i) {
