@@ -1,139 +1,81 @@
+#include <cstring>
+#include <cassert>
 #include "Sushi.hh"
-#include <string>
-#include <iostream>
-#include <sstream>
 
-// DZ: You implemented only 2 special characters out of 11 required
 std::string *Sushi::unquote_and_dup(const char* s)
 {
-    std::string* result = new std::string();
-
-    for (size_t i = 0; s[i] != '\0'; ++i) {
-        if (s[i] == '\\' && s[i + 1] != '\0') {  // Check for escape sequences
-            ++i;
-            switch (s[i]) {
-                case 'n': result->push_back('\n'); break;
-                case 't': result->push_back('\t'); break;
-                case 'r': result->push_back('\r'); break;
-                case 'b': result->push_back('\b'); break;
-                case 'f': result->push_back('\f'); break;
-                case 'v': result->push_back('\v'); break;
-                case 'a': result->push_back('\a'); break;
-                case 'e': result->push_back('\033'); break;  // Escape character
-                case '\\': result->push_back('\\'); break;
-                case '\"': result->push_back('\"'); break;
-                case '\'': result->push_back('\''); break;
-                default:  // Unknown escape, keep it as-is
-                    result->push_back('\\');
-                    result->push_back(s[i]);
-                    break;
-            }
-        } else {
-            result->push_back(s[i]);
-        }
+  assert(s);
+  
+  std::string result;
+  result.reserve(std::strlen(s));
+  
+  while (*s) {
+    if (*s == '\\') {
+      ++s;
+      if (!*s) {
+        result += '\\';
+        return new std::string(std::move(result));
+      }
+      
+      switch (*s) {
+      case 'a': result += '\a'; break;
+      case 'b': result += '\b'; break;
+      case 'e': result += '\x1B'; break;
+      case 'f': result += '\f'; break;
+      case 'n': result += '\n'; break;
+      case 'r': result += '\r'; break;
+      case 't': result += '\t'; break;
+      case 'v': result += '\v'; break;
+      case '\\': result += '\\'; break;
+      case '\'': result += '\''; break;
+      case '"': result += '"'; break;
+      default:
+	result += '\\';
+	result += *s;
+	break;
+      }
+      ++s;
+    } else {
+      result += *s++;
     }
-    return result;
+  }
+  return new std::string(std::move(result)); 
+}
+
+bool Sushi::re_execute() {
+  if(!redo.empty()) {
+    if (!parse_command(redo)) {
+      store_to_history(redo);
+    }
+    redo = "";
+    return true;
+  }
+  return false;
 }
 
 void Sushi::re_parse(int i) {
-	if (i <= 0 || i > static_cast<int>(history.size())) {
-	        std::cerr << "Error: !" << i << ": event not found\n";
-	        return;
-	    }
-
-	    const std::string& command = history[i - 1];
-	    if (parse_command(command) != 0) {
-	        history.push_back(command);
-	    }
-	}
-<<<<<<< HEAD
-/*int Sushi::parse_command(const std::string command) {
-=======
-
-// DZ: This function is already implemented
-/*
-int Sushi::parse_command(const std::string command) {
->>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
-    std::istringstream iss(command);
-    std::string first;
-    iss >> first;
-
-    // Handle environment variable assignment
-    if (first.find('=') != std::string::npos) {
-        size_t pos = first.find('=');
-        std::string name = first.substr(0, pos);
-        std::string value = first.substr(pos + 1);
-        setenv(name.c_str(), value.c_str(), 1); // updated to use standard setenv
-        return 0;
-    }
-<<<<<<< HEAD
-=======
-    // Handle built-in commands (like `exit`)
-    else if (first == "exit") {
-        exit(0);
-    }
-    // Execute external commands
-    else {
-        bool bg = (command.back() == '&');
-        std::string actual_command = command;
-        if (bg) actual_command.pop_back();  // Remove '&' from command
-        
-        Program *exe = new Program(new std::vector<std::string*>({new std::string(actual_command)}));
-        Sushi().spawn(exe, bg);
-        delete exe;
-    }
-    return 0;
+  size_t index = static_cast<size_t>(i);
+  if (index == 0 || index > history.size()) {
+    std::cerr << "!" << index << ": event not found" << std::endl;
+  } else {
+    redo = history[index - 1];
+  }
 }
-*/
->>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 
-    // Handle built-in command
-    if (first == "exit") {
-        exit_flag = true; // assuming exit_flag is a member of Sushi
-        return 0;
-    }
-
-    // Execute external command
-    bool bg = (!command.empty() && command.back() == '&');
-    std::string actual_command = command;
-    if (bg) actual_command.pop_back(); // Remove '&'
-
-    // Split the command into tokens
-    std::istringstream cmd_iss(actual_command);
-    std::string token;
-    auto args = new std::vector<std::string*>();
-    while (cmd_iss >> token) {
-        args->push_back(new std::string(token));
-    }
-
-    Program* exe = new Program(args);
-    spawn(exe, bg); // use current Sushi instance
-    delete exe;
-
-    return 0;
-}*/
 //---------------------------------------------------------------
 // Implement the function
 std::string *Sushi::getenv(const char* s) 
 {
-<<<<<<< HEAD
-=======
-  //DZ; Wrong var name
-  //char *val = std::getenv(name);
->>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
-    char *val = std::getenv(s);
-    return (val != nullptr) ? new std::string(val) : new std::string("");
+  const char *value = std::getenv(s);
+  return new std::string(value ? value : "");
 }
 
 // Implement the function
 void Sushi::putenv(const std::string* name, const std::string* value)
 {
-  if (setenv(name->c_str(), value->c_str(), 1) != 0) {
-    // DZ: Fail silently, as requested
-    // std::cerr << "Failed to set environment variable: " << *name << std::endl;
-    }
-    delete name;
-    delete value;
+  setenv(name->c_str(), value->c_str(), true);
+  delete name;
+  delete value;
 }
 
 //---------------------------------------------------------------
@@ -141,5 +83,4 @@ void Sushi::putenv(const std::string* name, const std::string* value)
 void yyerror(const char* s) {
   std::cerr << "Parse error: " << s << std::endl;
 }
-
 

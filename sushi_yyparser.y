@@ -10,6 +10,7 @@
   std::string *s;
   std::vector <std::string*> *s_vec;
   Program *p;
+  Pipe *pp;
   Redirection redir;
 }
 
@@ -29,29 +30,35 @@
 %token<s> YY_SUSHI_TOK
 
 %type<s> arg
-%type<redir> in_redir out1_redir out2_redir inout_redir out_redir  any_redir
+%type<redir> in_redir out1_redir out2_redir inout_redir out_redir any_redir
 %type<s_vec> args
 %type<b> bg_mode
-%type<p> exe redir_exe in_exe out_exe pipe
+%type<p> exe redir_exe in_exe out_exe
+%type<pp> pipe
 
 %start cmdline
 
 %%
 
 cmdline: 
-/*empty*/ /* an empty line is valid, too! Do nothing */ 
+%empty /* an empty line is valid, too! Do nothing */ 
 | redir_exe bg_mode    { my_shell.spawn($1, $2); }
-| in_exe pipe bg_mode  { $1->set_pipe($2); my_shell.spawn($1, $3); }
+| in_exe pipe bg_mode  {
+  $2->hd()->set_pipe($1);
+  Program *last = $2->tl();
+  delete $2;
+  my_shell.spawn(last, $3);
+ }
 | arg YY_SUSHI_SET arg { my_shell.putenv($1, $3); }
-| YY_SUSHI_PWD         // Not implemented yet
-| YY_SUSHI_CD arg      // Not implemented yet
+| YY_SUSHI_PWD         { my_shell.pwd(); }
+| YY_SUSHI_CD arg      { my_shell.cd($2); }
 | YY_SUSHI_HISTORY { my_shell.show_history(); }
 | YY_SUSHI_BANG    { my_shell.re_parse($1); }
 | YY_SUSHI_EXIT    { my_shell.set_exit_flag(); }
 
 pipe: 
-YY_SUSHI_BAR out_exe  { $$ = $2; }
-| pipe YY_SUSHI_BAR out_exe { $3->set_pipe($1); $$ = $1; }
+       YY_SUSHI_BAR out_exe { $$ = new Pipe($2); }
+| pipe YY_SUSHI_BAR out_exe { $3->set_pipe($1->tl()); $1->tl($3); $$ = $1; }
 
 redir_exe: 
   exe { $$ = $1; }          
@@ -83,7 +90,7 @@ out1_redir: YY_SUSHI_MORE arg      { $$.set_out1($2); }
 out2_redir: YY_SUSHI_MOREMORE arg  { $$.set_out2($2); }
 
 bg_mode: 
- /*empty*/        { $$ = false; }
+ %empty        { $$ = false; }
 | YY_SUSHI_AMP { $$ = true; }
 
 exe: 
