@@ -3,11 +3,7 @@
 #include <fstream>
 #include <string>
 #include "Sushi.hh"
-<<<<<<< HEAD
-=======
-
 // DZ: Must be a global variable
->>>>>>> 1d1493f3da590886c512a1eb44288044ef1622ce
 Sushi my_shell;
 int main(int argc, char* argv[]) {
   //Sushi my_shell;
