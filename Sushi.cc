@@ -17,8 +17,6 @@
 #include <string>       // std::string
 #include <deque>        // std::deque
 #include <iostream>     // std::cerr, std::cout
-const std::string Sushi::DEFAULT_CONFIG = ".sushirc";
-const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
 
 Sushi::Sushi()
 {

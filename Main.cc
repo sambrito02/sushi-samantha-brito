@@ -3,6 +3,11 @@
 #include <fstream>
 #include <string>
 #include "Sushi.hh"
+
+// DZ: Must be initialized befor used in `my_shell`
+const std::string Sushi::DEFAULT_CONFIG = ".sushirc";
+const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
+
 // DZ: Must be a global variable
 Sushi my_shell;
 int main(int argc, char* argv[]) {

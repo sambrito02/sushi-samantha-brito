@@ -14,9 +14,7 @@ public:
   void set_out1(std::string *fname) { redir_out1 = fname; }
   void set_out2(std::string *fname) { redir_out2 = fname; }
   void set_in(std::string *fname)   { redir_in = fname; }
-  void set_in(Redirection &redir)   {
-    redir_in = redir.redir_out1 ? redir.redir_out1 : redir.redir_out2;
-  }
+  void set_in(Redirection &redir)   { redir_in = redir.redir_in; }
 };
 
 // The program to be executed
@@ -32,22 +30,11 @@ public:
   ~Program();
   void set_pipe(Program *pipe) { this->pipe = pipe; };
   void set_redir(Redirection &redir) { this->redir = redir; };
-  void clear_redir() { redir.clear(); }
   
   // Helper method(s)
   // Converts the args to whatever `execvp` expects
   char* const* vector2array();
   Program *prev() { return pipe; };
-};
-
-class Pipe {
-private:
-  Program *head, *tail;
-public:
-  Pipe(Program *p) : head(p), tail(p) {};
-  Program *hd() { return head; }
-  Program *tl() { return tail; }
-  void tl(Program *p) { tail = p; }
 };
 
 class Sushi {

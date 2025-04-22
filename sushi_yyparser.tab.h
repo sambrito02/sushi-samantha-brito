@@ -76,7 +76,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 7 "sushi_yyparser.y"
+#line 8 "sushi_yyparser.y"
 
   bool b;
   int i;
