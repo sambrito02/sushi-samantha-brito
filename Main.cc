@@ -1,23 +1,22 @@
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <string>
 #include "Sushi.hh"
+// DZ: Must be a global variable
+Sushi my_shell;
+int main(int argc, char* argv[]) {
+  //Sushi my_shell;
 
-// Initialize the static constants
-const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
-const std::string Sushi::DEFAULT_CONFIG = "sushi.conf";
-
-// The constructor will read the configuration file, if present
-Sushi my_shell; 
-
-int main(int argc, char *argv[])
-{
-  // Execute command-line scripts
-  for (int i = 1; i < argc; ++i) {
-    if(!my_shell.read_config(argv[i], false /* NOT ok if missing */)) {
-      return EXIT_FAILURE;
+    for (int i = 1; i < argc; ++i) {
+      my_shell.read_config(argv[i], false);
+      // DZ: Wrong function
+      //if (!my_shell.execute_script(argv[i])) {
+	  // DZ: Already reported
+	  // std::cerr << "Error executing script: " << argv[i] << std::endl;
+      //return EXIT_FAILURE;  // Exit immediately if a script fails
+      //}
     }
-  }
-  
-  // Enter the main loop for good
-  my_shell.mainloop();
-  
-  return EXIT_SUCCESS;
+
+    return my_shell.mainloop();
 }
