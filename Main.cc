@@ -18,5 +18,6 @@ int main(int argc, char* argv[]) {
       //}
     }
 
-    return my_shell.mainloop();
+    my_shell.mainloop();
+    return 0; 
 }

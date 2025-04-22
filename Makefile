@@ -1,4 +1,5 @@
-CXXFLAGS = -Wall -Wextra -Wpedantic -Wno-unused-function -g -fPIC
+#CXXFLAGS = -Wall -Wextra -Wpedantic -Wno-unused-function -g -fPIC
+CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++11 -g -fPIC
 
 OBJS = Main.o Sushi.o sushi_parse.o sushi_yyparser.tab.o lex.yy.o # New objects added
 

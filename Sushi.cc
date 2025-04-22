@@ -7,6 +7,18 @@
 #include <cassert>
 #include <sys/wait.h>
 #include "Sushi.hh"
+#include <unistd.h>     // fork, execvp, dup2, chdir, getcwd
+#include <sys/types.h>  // pid_t
+#include <sys/wait.h>   // waitpid
+#include <fcntl.h>      // open
+#include <cstdlib>      // exit, setenv
+#include <cstdio>       // perror
+#include <limits.h>     // PATH_MAX
+#include <string>       // std::string
+#include <deque>        // std::deque
+#include <iostream>     // std::cerr, std::cout
+const std::string Sushi::DEFAULT_CONFIG = ".sushirc";
+const std::string Sushi::DEFAULT_PROMPT = "sushi> ";
 
 Sushi::Sushi()
 {
@@ -28,7 +40,7 @@ std::string Sushi::read_line(std::istream &in)
     if(!in.eof()) { 
       std::perror("getline");
     }
-    return {};
+    return std::string();
   }
     
   // Is the line empty?
