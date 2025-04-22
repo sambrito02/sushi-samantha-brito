@@ -7,6 +7,11 @@
 #include <cassert>
 #include <sys/wait.h>
 #include "Sushi.hh"
+#include <unistd.h>     // fork, execvp, dup2, chdir, getcwd
+#include <sys/types.h>  // pid_t
+#include <sys/wait.h>   // waitpid
+#include <fcntl.h>      // open
+#include <stdlib.h>     // exit, setenv
 
 Sushi::Sushi()
 {
@@ -146,55 +151,46 @@ static pid_t run_child (Program *prog, int fd_in, int fd_out, int fd_close)
   _exit(EXIT_FAILURE);
 }
 
-int Sushi::spawn(Program *right, bool bg) const
-{
+int Sushi::spawn(Program *right, bool bg) const {
   pid_t left_pid, right_pid;
   int pipefd[2];
   Program *left = right->prev();
-    
+
   if (left) {
     if (pipe(pipefd) == -1) {
       std::perror("pipe");
       return EXIT_FAILURE;
     }
 
-    // Fork a child
     if ((left_pid = run_child(left, STDIN_FILENO, pipefd[1], pipefd[0])) < 0) {
       return EXIT_FAILURE;
     }
 
-    // Fork another child
     if ((right_pid = run_child(right, pipefd[0], STDOUT_FILENO, pipefd[1])) < 0) {
       return EXIT_FAILURE;
     }
 
-    // Parent: close unused pipe ends
     close(pipefd[0]);
     close(pipefd[1]);
   } else {
-    // Fork a child
+    // Just fork + use run_child() — redirection is handled there
     if ((right_pid = run_child(right, STDIN_FILENO, STDOUT_FILENO, -1)) < 0) {
       return EXIT_FAILURE;
     }
   }
 
-
-  // Parent handles foreground execution, if necessary
   if (bg) {
-     setenv("?", "", 1);
-     return EXIT_SUCCESS;   
+    setenv("?", "", 1);
+    return EXIT_SUCCESS;
   }
-  
-  // Inspect the pids in the reverse order to get the most recent status
-  int status;
 
+  int status;
   if ((left && waitpid(left_pid, &status, 0) != left_pid)
       || waitpid(right_pid, &status, 0) != right_pid) {
     std::perror("waitpid");
     return EXIT_FAILURE;
   }
 
-  // Save the exit status in the environment
   setenv("?", std::to_string(status).c_str(), 1);
   return EXIT_SUCCESS;
 }
@@ -235,12 +231,20 @@ void Sushi::mainloop()
 // Two new methods to implement
 void Sushi::pwd()
 {
-  std::cerr << "pwd: not implemented yet" << std::endl;
+  char buffer[PATH_MAX];
+  if (getcwd(buffer, sizeof(buffer)) != nullptr) {
+    std::cout << buffer << std::endl;
+  } else {
+    perror("getcwd");
+  }
 }
 
 void Sushi::cd(std::string *s)
 {
-  std::cerr << "cd(" << *s << "): not implemented yet" << std::endl;
+  if (chdir(s->c_str()) != 0) {
+    perror("cd");
+  }
+  delete s;
 }
 
 char* const* Program::vector2array()
